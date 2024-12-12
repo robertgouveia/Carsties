@@ -3,6 +3,8 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +16,13 @@ public class AuctionsController : ControllerBase
 {
     private readonly AuctionDbContext _auctionDbContext;
     private readonly IMapper _mapper;
+    private readonly IPublishEndpoint _publishEndpoint;
     
-    public AuctionsController(AuctionDbContext context, IMapper mapper)
+    public AuctionsController(AuctionDbContext context, IMapper mapper, IPublishEndpoint publishEndpoint)
     {
         _auctionDbContext = context;
         _mapper = mapper;
+        _publishEndpoint = publishEndpoint;
     }
 
     [HttpGet]
@@ -54,12 +58,18 @@ public class AuctionsController : ControllerBase
         // TODO: Add current user as seller
         auction.Seller = "test";
         
+        // Transaction - all must pass
         _auctionDbContext.Auctions.Add(auction);
+        
+        // Publish message to the message bus
+        var newAuction = _mapper.Map<AuctionDto>(auction);
+        await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
+        
         var result = await _auctionDbContext.SaveChangesAsync() > 0;
         
         if (!result) return BadRequest("Could not create auction");
 
-        return CreatedAtAction(nameof(GetAuctionById), new { auction.Id }, _mapper.Map<AuctionDto>(auction));
+        return CreatedAtAction(nameof(GetAuctionById), new { auction.Id }, newAuction);
     }
 
     [HttpPut("{id}")]
@@ -78,6 +88,8 @@ public class AuctionsController : ControllerBase
         auction.Item.Mileage = updateAuction.Mileage ?? auction.Item.Mileage;
         auction.Item.Model = updateAuction.Model ?? auction.Item.Model;
         auction.Item.Year = updateAuction.Year ?? auction.Item.Year;
+        
+        await _publishEndpoint.Publish(_mapper.Map<AuctionUpdated>(auction));
       
         return await _auctionDbContext.SaveChangesAsync() < 0 ? BadRequest("Could not update auction") : Ok();
     }
@@ -92,6 +104,10 @@ public class AuctionsController : ControllerBase
         // TODO: Check Seller's Username
         
         _auctionDbContext.Auctions.Remove(auction);
+
+        // Specify type
+        await _publishEndpoint.Publish<AuctionDeleted>(new { Id = auction.Id.ToString() });
+        
         return await _auctionDbContext.SaveChangesAsync() < 0 ? BadRequest("Could not delete auction") : Ok();
     }
     
