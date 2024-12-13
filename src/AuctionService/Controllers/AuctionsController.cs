@@ -5,11 +5,13 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Contracts;
 using MassTransit;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AuctionService.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/auctions")]
 public class AuctionsController : ControllerBase
@@ -26,6 +28,7 @@ public class AuctionsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions(string date)
     {
         var query = _auctionDbContext.Auctions.OrderBy(x => x.Item.Make).AsQueryable();
@@ -55,8 +58,7 @@ public class AuctionsController : ControllerBase
     {
         var auction = _mapper.Map<Auction>(createAuction);
         
-        // TODO: Add current user as seller
-        auction.Seller = "test";
+        auction.Seller = User.Identity!.Name; // Mapped to Username
         
         // Transaction - all must pass
         _auctionDbContext.Auctions.Add(auction);
@@ -81,7 +83,7 @@ public class AuctionsController : ControllerBase
         
         if (auction == null) return NotFound();
 
-        // TODO: Check Seller's Username
+        if (auction.Seller != User.Identity!.Name) return Forbid();
         
         auction.Item.Make =  updateAuction.Make ?? auction.Item.Make;
         auction.Item.Color = updateAuction.Color ?? auction.Item.Color;
@@ -100,8 +102,8 @@ public class AuctionsController : ControllerBase
         var auction = await _auctionDbContext.Auctions.FindAsync(id);
         
         if (auction == null) return NotFound();
-        
-        // TODO: Check Seller's Username
+
+        if (auction.Seller != User.Identity!.Name) return Forbid();
         
         _auctionDbContext.Auctions.Remove(auction);
 
