@@ -26,6 +26,19 @@ public static class Config
             RedirectUris = { "https://www.getposman.com/oauth2/callback" }, // Example Callback
             ClientSecrets = [ new("NotASecret".Sha256()) ],
             AllowedGrantTypes = { GrantType.ResourceOwnerPassword } // Not a recommended grant type (DEV ONLY)
+        },
+        
+        new() // NEXT.JS CLIENT
+        {
+            ClientId = "nextApp",
+            ClientName = "nextApp",
+            ClientSecrets = {new("secret".Sha256())},
+            AllowedGrantTypes = GrantTypes.CodeAndClientCredentials, // Internally communicate via credentials
+            RequirePkce = false, // Would be able to store secret server side
+            RedirectUris = { "http://localhost:3000/api/auth/callback/id-server" },
+            AllowOfflineAccess = true, // Enable refresh token
+            AllowedScopes = {"openid", "profile", "auctionApp"}, // Scopes for Identity
+            AccessTokenLifetime = 3600*24*30 // 1 Month (DEV ONLY) -- Unrevokeable
         }
     ];
 }
