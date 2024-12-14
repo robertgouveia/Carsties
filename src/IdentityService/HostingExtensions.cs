@@ -31,6 +31,11 @@ internal static class HostingExtensions
                 options.Events.RaiseFailureEvents = true;
                 options.Events.RaiseSuccessEvents = true;
 
+                if (builder.Environment.IsEnvironment("Docker"))
+                {
+                    options.IssuerUri = "http://identity-svc";
+                }
+
                 // see https://docs.duendesoftware.com/identityserver/v6/fundamentals/resources/
                 //options.EmitStaticAudienceClaim = true;
             })
@@ -49,7 +54,7 @@ internal static class HostingExtensions
             opt.LogoutPath = "/Account/Logout"; // Path to your logout page
             opt.AccessDeniedPath = "/Account/AccessDenied"; // Path for access denied
             opt.ExpireTimeSpan = TimeSpan.FromMinutes(60); // Session duration
-            opt.SlidingExpiration = true; // Refresh cookie expiration on use
+            opt.SlidingExpiration = true; // Refresh cookie expiration on usea
         });
 
         return builder.Build();
