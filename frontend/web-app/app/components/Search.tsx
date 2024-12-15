@@ -3,14 +3,19 @@
 import {FaSearch} from "react-icons/fa";
 import {useParamsStore} from "@/hooks/useParamsStore";
 import {ChangeEvent} from "react";
+import {useRouter} from "next/navigation";
 
 export default function Search() {
+    const router = useRouter();
     const setParams = useParamsStore(state => state.setParams);
     const setSearch = useParamsStore(state => state.setSearch);
     const value = useParamsStore(state => state.searchValue);
 
     const onChange = (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)
-    const search = () => setParams({searchTerm: value})
+    const search = () => {
+        setParams({searchTerm: value});
+        router.push("/");
+    }
 
     return (
         <div className="flex w-[50%] items-center border-2 rounded-full py-2 shadow-sm">

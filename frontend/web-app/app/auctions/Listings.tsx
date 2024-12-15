@@ -19,7 +19,9 @@ export default function Listings() {
         pageSize: state.pageSize,
         searchTerm: state.searchTerm,
         orderBy: state.orderBy,
-        filterBy: state.filterBy
+        filterBy: state.filterBy,
+        winner: state.winner,
+        seller: state.seller,
     })));
     const setParams = useParamsStore(state => state.setParams);
     const url = qs.stringifyUrl({url: "", query: params});
